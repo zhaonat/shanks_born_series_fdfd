@@ -2,6 +2,8 @@
 Paper: [Determining the optimal learning rate in gradient-based electromagnetic optimization using the Shanks transformation in the Lippmann–Schwinger formalism](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-45-3-595)
 
 ## Mode Convertor
+![Alt text](./img/iteration_demo.png?raw=true "Title")
+
 
 ## "Dipole Lens"
 
