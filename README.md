@@ -4,6 +4,8 @@ Paper: [Determining the optimal learning rate in gradient-based electromagnetic 
 ## Mode Convertor
 ![Alt text](./img/iteration_demo.png?raw=true "Title")
 
+![Alt text](./img/comparison_structure.png?raw=true "Title")
+
 
 ## "Dipole Lens"
 
