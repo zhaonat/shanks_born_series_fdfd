@@ -29,7 +29,7 @@ function sfactor_array = create_sfactor(wrange, s, omega, eps0, mu0, Nw, Nw_pml,
     sigma_max = -(m+1)*lnR/(2*eta0) ./ d_pml; %usually the pml is the same thickness on both sides
 
     %% forward or backward...idk what this is requiring
-    if s == 'b'
+    if s == 'b' % ws is 1 unit smaller than w_array
         ws = w_array(1:end-1);
     else  % s == 'f'
         assert(s == 'f');
