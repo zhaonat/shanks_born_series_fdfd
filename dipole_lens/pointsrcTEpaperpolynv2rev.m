@@ -2,6 +2,8 @@ clear all;
 close all;
 clc;
 
+%% SCRIPT IS TO A BRUTE FORCE or RIGOROUS ASSESSMENT OF LEARNING RATE
+
 %%
 spparms('spumoni',0)
 
@@ -31,9 +33,6 @@ k0=(2*pi)/wvlen;
 [xrange, yrange, N, dL, Lpml] = domain_with_pml(xrange0, yrange0, N0, Npml);  % domain is expanded to include PML
 
 [YY,XX]=meshgrid(linspace(yrange(1)+0.025,yrange(2)-0.025,N(2)),linspace(xrange(1)+0.025,xrange(2)-0.025,N(1)));
-
-%XX0b=XX(all([XX<(xrange(2)-Lpml(1)) XX>(xrange(1)+Lpml(1)) YY<(yrange(2)-Lpml(2)) YY>(yrange(1)+Lpml(2))]));
-%YY0b=YY(all([XX<(xrange(2)-Lpml(1)) XX>(xrange(1)+Lpml(1)) YY<(yrange(2)-Lpml(2)) YY>(yrange(1)+Lpml(2))]));
 
 TT0b=(XX<(xrange(2)-Lpml(1))).*(XX>(xrange(1)+Lpml(1))).*(YY<(yrange(2)-Lpml(2))).*(YY>(yrange(1)+Lpml(2)));
 %TTopt=(XX<(xrange(2)-Lpml(1))).*(XX>(xrange(1)+Lpml(1))).*(YY<(yrange(2)-Lpml(2))).*(YY>(yrange(1)+Lpml(2)));
@@ -111,7 +110,7 @@ alphafix=1;
 %newbinaire=1;
 binaire=0;cptbinaire=0;newbinaire=0;
 cptadapt=1;
-
+gradient_history = cell(1);
 for iiter=1:3000,%7,%200;50;%2000,%75;%2000,%while irandomfini==0,%for iiter=1:2200,
 
      tic
@@ -129,9 +128,6 @@ for iiter=1:3000,%7,%200;50;%2000,%75;%2000,%while irandomfini==0,%for iiter=1:2
     end;
 
 
-    %abs(YY-4)<0.05)=1;%exp(-1.*(abs(XX(abs(YY-4)<0.05))).^2);%exp(-i.*k0.*YY(and(abs(XX)<3,abs(YY-4)<0.01)));
-
-    %Mz=exp(i.*k0.*YY);
 
 
     if iadj==1,
@@ -149,33 +145,11 @@ for iiter=1:3000,%7,%200;50;%2000,%75;%2000,%while irandomfini==0,%for iiter=1:2
 
     end;
 
-    figure(15)
-    pcolor(XX,YY,eps_str);shading('interp'),colorbar,axis([min(min(XX0b)) max(max(XX0b)) min(min(YY0b)) max(max(YY0b))]);
-    xlabel('X(µm)');
-    ylabel('Y(µm)');
-    shading('interp')
-    colormap(flipud(colormap('gray')));
-
-
-    toc
-    figure(1)
-    %pcolor(XX*1000,YY*1000,log10((abs(Ez_for)).^2)+2.369+0.04936);title('log_{10}(E^2)');shading('interp'),colorbar,axis([-1.55 1.55 -1.55 1.55].*1000),caxis([-1 4]),xlabel('X(nm)'),ylabel('Z(nm)')
-    pcolor(XX*1000,YY*1000,((log10((abs(Ez_for)).^2)+2.369+0.04936)));title('real(E)');shading('interp'),colorbar,axis([-1.55 1.55 -1.55 1.55].*1000),caxis([-1 5]),xlabel('X(nm)'),ylabel('Z(nm)')
-    frame = getframe(figure(1));
-    im1{iiter} = frame2im(frame);
-    %close all
-
-    if iiter>1,
-    figure(10)
-    pcolor(XX*1000,YY*1000,((real(Ez_for_old))));title('real(E_{old})');shading('interp'),colorbar,axis([-1.55 1.55 -1.55 1.55].*1000),caxis([-1 4]),xlabel('X(nm)'),ylabel('Z(nm)')
-
-    end;
 
     Ez_for_old=Ez_for;
 
     Objective(iiter)=log10((abs(Ez_for(II1b,II2b)))^2)+2.369+0.04936;%./imag(Ez_for(II1a,II2a));
     Objectiveadapt(cptadapt)=log10((abs(Ez_for(II1b,II2b)))^2)+2.369+0.04936;%
-
 
 
     Timecpt(iiter)=toc;
@@ -196,27 +170,17 @@ for iiter=1:3000,%7,%200;50;%2000,%75;%2000,%while irandomfini==0,%for iiter=1:2
     eps_strnorm=eps_str;
     eps_strnorm(TTopt==1)=eps_strnorm(TTopt==1)+dFOM(TTopt==1).*(GGG).*facmin;%0.005
 
-    figure(16)
-    pcolor(XX*1000,YY*1000,eps_str);shading('interp'),colorbar,title('eps new'),axis([-1.55 1.55 -1.55 1.55].*1000);
-
-    figure(17)
-    pcolor(XX*1000,YY*1000,eps_str-eps_str_old);shading('interp'),title('deeps'),colorbar,axis([-1.55 1.55 -1.55 1.55].*1000);
-
-
     eps_str((TTopt.*(eps_str>2.5^2)==1))=2.5^2;
     eps_str((TTopt.*(eps_str<1.5^2)==1))=1.5^2;
 
     deeps_str=eps_strnorm-eps_str_old;
-    if iiter==49
-        figure(40),pcolor(XX*1000,YY*1000,deeps_str),axis([-1.55 1.55 -1.55 1.55].*1000),shading('interp'),colorbar,title('\Delta eps'),xlabel('X(nm)'),ylabel('Z(nm)')
-        figure(41),surf(XX*1000,YY*1000,deeps_str-(eps_str-eps_str_old)),axis([-1.55 1.55 -1.55 1.55].*1000),shading('interp'),colorbar,title('\Erreur Delta eps'),xlabel('X(nm)'),ylabel('Z(nm)')
-    end;
+    gradient_history{iiter} = deeps_str;
     Ez_proj{iiter}=Ez_for;
     dEz_for{1}=Ez_for;
     S(1)=dEz_for{1}(II1b,II2b);
     
     %% something's wrong with the N_order...here, it has to be way too large?
-    N_order=9;%5
+    N_order=3;%5
     for iorder=2:N_order,
         Mz(TTopt==1)=1./(-i*k0*Z0)*k0^2*deeps_str(TTopt==1).*dEz_for{iorder-1}(TTopt==1);
        [dEz_for{iorder}, Hx_forin, Hy_forin, Ain, omegain,bin] = solveTM(L0,wvlen, xrange, yrange, eps_str_old, Mz, Npml);
@@ -226,23 +190,23 @@ for iiter=1:3000,%7,%200;50;%2000,%75;%2000,%while irandomfini==0,%for iiter=1:2
     alphav=[1e-6:1e-6:9e-6 1e-5:1e-5:9e-5 1e-4:1e-4:9e-4 1e-3:1e-3:9e-3 1e-2:1e-2:9e-2 1e-1:1e-1:1];%0:0.0001:1;
 
     for ialpha=1:numel(alphav),
-
-        for iorder=2:N_order,
-            Ez_proj{iiter}=Ez_proj{iiter}+(alphav(ialpha)).^(iorder-1)*dEz_for{iorder};
-            S(iorder)=S(iorder-1)+(alphav(ialpha)).^(iorder-1)*dEz_for{iorder}(II1b,II2b);
-        end;
-
-        e{1}=S;
-        for iorder=1:N_order-1,
-            e{2}(iorder)=1/(S(iorder+1)-S(iorder));
-        end;
-        for ip=3:N_order,
-            for iorder=1:N_order-ip+1,
-                e{ip}(iorder)=e{ip-2}(iorder+1)+1/(e{ip-1}(iorder+1)-e{ip-1}(iorder));    
-            end;
-        end;
-        prediction(ialpha)=log10((abs(S(N_order))).^2)+2.369+0.04936;
-        
+% 
+%         for iorder=2:N_order,
+%             Ez_proj{iiter}=Ez_proj{iiter}+(alphav(ialpha)).^(iorder-1)*dEz_for{iorder};
+%             S(iorder)=S(iorder-1)+(alphav(ialpha)).^(iorder-1)*dEz_for{iorder}(II1b,II2b);
+%         end;
+% 
+%         e{1}=S;
+%         for iorder=1:N_order-1,
+%             e{2}(iorder)=1/(S(iorder+1)-S(iorder));
+%         end;
+%         for ip=3:N_order,
+%             for iorder=1:N_order-ip+1,
+%                 e{ip}(iorder)=e{ip-2}(iorder+1)+1/(e{ip-1}(iorder+1)-e{ip-1}(iorder));    
+%             end;
+%         end;
+%         prediction(ialpha)=log10((abs(S(N_order))).^2)+2.369+0.04936;
+%         
         %% CHECK THIS
         eps_str_brute=eps_str_old;
         eps_str_brute(TTopt==1)=eps_str_brute(TTopt==1)+dFOM(TTopt==1).*(alphav(ialpha)).*facmin;%0.005
@@ -254,33 +218,18 @@ for iiter=1:3000,%7,%200;50;%2000,%75;%2000,%while irandomfini==0,%for iiter=1:2
     end;
 
     UUUint=1e-6:1e-6:1;
-    VVVint=interp1(alphav,full(prediction),UUUint,'spline');
-    WWW(iiter)=UUUint(find(VVVint==max(VVVint)));
-    VVVbrute = interp1(alphav,full(prediction),UUUint,'spline');
+    %VVVint=interp1(alphav,full(prediction),UUUint,'spline');
+    %WWW(iiter)=UUUint(find(VVVint==max(VVVint)));
+    VVVbrute = interp1(alphav,full(obj_brute),UUUint,'spline');
     WWWbrute(iiter)=UUUint(find(VVVbrute==max(VVVbrute)));
-
-    alphamax(iiter)=WWW(iiter);
+    
+    %% use the brute force version
+    alphamax(iiter)=WWWbrute(iiter);
 
     eps_str(TTopt==1)=eps_str(TTopt==1)+dFOM(TTopt==1).*(alphamax(iiter)).*facmin;%0.005
-
     predictedObjective=log10((abs(Ez_proj{iiter}(II1b,II2b)))^2)+2.369+0.04936;
 
-
-    if iiter>1,
-
-        figure(50)
-        pcolor(XX*1000,YY*1000,((real(Ez_proj{iiter-1}))));title(sprintf('log_{10}(E_{extrap}^2) (nb_{orders}=%g)',iorder-1));shading('interp'),colorbar,axis([-1.55 1.55 -1.55 1.55].*1000),caxis([-1 4]),xlabel('X(nm)'),ylabel('Z(nm)')
-        figure(60)
-        pcolor(XX*1000,YY*1000,log10(abs(Ez_proj{iiter-1}-Ez_for)./abs(Ez_for)));title('relative error');shading('interp'),colorbar,axis([-1.55 1.55 -1.55 1.55].*1000),xlabel('X(nm)'),ylabel('Z(nm)')
-
-    end;
-
   
-    %figure
-    %pcolor(XX*1000,YY*1000,eps_str);shading('interp'),title('epsilon'),caxis([2.25 6.25]),xlabel('X(nm)'),ylabel('Z(nm)'),colorbar,axis([min(min(XX0b)) max(max(XX0b)) min(min(YY0b)) max(max(YY0b))]*1000);
-    frame = getframe(figure(4));
-    im4{iiter} = frame2im(frame);
-
     drawnow
     iiter=iiter+1;
     iiter
@@ -289,6 +238,7 @@ for iiter=1:3000,%7,%200;50;%2000,%75;%2000,%while irandomfini==0,%for iiter=1:2
     
 end;
 
+save("alphamax_data.mat", "alphamax", "gradient_history","Objective");
 
 
 
